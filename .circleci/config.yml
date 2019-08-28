@@ -44,9 +44,8 @@ jobs:
       - image: circleci/node:jessie-browsers
     steps:
       - checkout
-      - run: apt-get update && apt-get -y install --no-install-recommends libgconf-2-4
+      #- run: apt-get update && apt-get -y install --no-install-recommends libgconf-2-4
       - run: npm install
-      - run: npm update caniuse-lite browserslist
       # https://github.com/SeleniumHQ/docker-selenium/issues/222#issuecomment-221307583
       - run:
           name: Run Tests

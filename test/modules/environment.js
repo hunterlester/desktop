@@ -55,6 +55,7 @@ module.exports = {
       webdriverOptions: {
         deprecationWarnings: false,
       },
+      chromeDriverArgs: ['--disable-web-security', '--disable-gpu', '--headless', '--start-maximized'],
     });
   },
 
