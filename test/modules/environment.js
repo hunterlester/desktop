@@ -51,11 +51,11 @@ module.exports = {
   getSpectronApp() {
     return new Application({
       path: electronBinaryPath,
-      args: [`${path.join(sourceRootDir, 'src')}`, `--user-data-dir=${userDataDir}`, '--disable-dev-mode'],
+      args: [`${path.join(sourceRootDir, 'src')}`, `--data-dir=${userDataDir}`, '--disable-dev-mode'],
       webdriverOptions: {
         deprecationWarnings: false,
       },
-      chromeDriverArgs: ['--disable-web-security', '--disable-gpu', '--headless', '--start-maximized'],
+      chromeDriverArgs: ['--whitelisted-ips', '--disable-web-security', '--disable-gpu', '--headless'],
     });
   },
 
