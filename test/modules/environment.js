@@ -52,6 +52,9 @@ module.exports = {
     return new Application({
       path: electronBinaryPath,
       args: [`${path.join(sourceRootDir, 'src')}`, `--user-data-dir=${userDataDir}`, '--disable-dev-mode'],
+      webdriverOptions: {
+        deprecationWarnings: false,
+      },
     });
   },
 

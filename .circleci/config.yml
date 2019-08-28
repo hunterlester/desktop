@@ -41,8 +41,7 @@ jobs:
   test:
     working_directory: ~/mattermost-desktop
     docker:
-      - image: electronuserland/builder:wine-chrome
-    resource_class: large
+      - image: circleci/node:jessie-browsers
     steps:
       - checkout
       - run: apt-get update && apt-get -y install --no-install-recommends libgconf-2-4
@@ -51,10 +50,13 @@ jobs:
       # https://github.com/SeleniumHQ/docker-selenium/issues/222#issuecomment-221307583
       - run:
           name: Run Tests
-          command: DBUS_SESSION_BUS_ADDRESS=/dev/null xvfb-run npm test
+          command: |
+              #DBUS_SESSION_BUS_ADDRESS=/dev/null xvfb-run
+              npm test
           no_output_timeout: 1h
-      - run: mkdir -p /tmp/test-results
-      - run: cp test-results.xml /tmp/test-results/
+      - run: |
+          mkdir -p /tmp/test-results
+          cp test-results.xml /tmp/test-results/
       - store_test_results:
           path: /tmp/test-results
 
