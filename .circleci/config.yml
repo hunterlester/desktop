@@ -1,28 +1,16 @@
 version: 2
-executors:
-  linux_only:
+jobs:
+  lint:
     working_directory: ~/mattermost-desktop
     docker:
       - image: electronuserland/builder:12
-  default:
-    working_directory: ~/mattermost-desktop
-    docker:
-      - image: electronuserland/builder:wine-mono
-  wine:
-    working_directory: ~/mattermost-desktop
-    docker:
-      - image: electronuserland/builder:wine-chrome
-
-jobs:
-  lint:
-    executor: 
-      name: linux_only
     steps:
       - run: npm run lint:js
     
   build:
-    executor: 
-      name: default
+    working_directory: ~/mattermost-desktop
+    docker:
+      - image: electronuserland/builder:wine-mono
     steps:
       - checkout
       - restore_cache:
@@ -58,8 +46,9 @@ jobs:
           destination: storybook
 
   test:
-    executor: 
-      name: wine
+    working_directory: ~/mattermost-desktop
+    docker:
+      - image: electronuserland/builder:wine-chrome
     steps:
       - checkout
       - run: apt-get update && apt-get -y install --no-install-recommends libgconf-2-4
