@@ -15,12 +15,14 @@ executors:
 
 jobs:
   lint:
-    executor: linux_only
+    executor: 
+      name: linux_only
     steps:
       - run: npm run lint:js
     
   build:
-    executor: default
+    executor: 
+      name: default
     steps:
       - checkout
       - restore_cache:
@@ -56,7 +58,8 @@ jobs:
           destination: storybook
 
   test:
-    executor: wine
+    executor: 
+      name: wine
     steps:
       - checkout
       - run: apt-get update && apt-get -y install --no-install-recommends libgconf-2-4
