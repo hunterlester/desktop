@@ -1,9 +1,26 @@
 version: 2
-jobs:
-  build:
+executors:
+  linux_only:
+    working_directory: ~/mattermost-desktop
+    docker:
+      - image: electronuserland/builder:12
+  default:
     working_directory: ~/mattermost-desktop
     docker:
       - image: electronuserland/builder:wine-mono
+  wine:
+    working_directory: ~/mattermost-desktop
+    docker:
+      - image: electronuserland/builder:wine-chrome
+
+jobs:
+  lint:
+    executor: linux_only
+    steps:
+      - run: npm run lint:js
+    
+  build:
+    executor: default
     steps:
       - checkout
       - restore_cache:
@@ -39,15 +56,12 @@ jobs:
           destination: storybook
 
   test:
-    working_directory: ~/mattermost-desktop
-    docker:
-      - image: electronuserland/builder:wine-chrome
+    executor: wine
     steps:
       - checkout
       - run: apt-get update && apt-get -y install --no-install-recommends libgconf-2-4
       - run: npm install
-      # https://github.com/SeleniumHQ/docker-selenium/issues/222#issuecomment-221307583
-      - run: DBUS_SESSION_BUS_ADDRESS=/dev/null xvfb-run npm test
+      - run: xvfb-run npm test
       - run: mkdir -p /tmp/test-results
       - run: cp test-results.xml /tmp/test-results/
       - store_test_results:
@@ -57,5 +71,6 @@ workflows:
   version: 2
   build_and_test:
     jobs:
+      - lint
       - build
       - test
