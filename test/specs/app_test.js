@@ -14,8 +14,7 @@ describe('application', function desc() {
     env.createTestUserDataDir();
     env.cleanTestConfig();
     this.app = env.getSpectronApp();
-    const result = this.app.start();
-    return result;
+    return this.app.start();
   });
 
   afterEach(async () => {
