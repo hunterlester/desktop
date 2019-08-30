@@ -52,6 +52,7 @@ module.exports = {
     return new Application({
       path: electronBinaryPath,
       args: [`${path.join(sourceRootDir, 'src')}`, `--data-dir=${userDataDir}`, '--disable-dev-mode'],
+      chromeDriverArgs: ['remote-debugging-port=9222'],
     });
   },
 
