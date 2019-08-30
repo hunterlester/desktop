@@ -55,7 +55,6 @@ module.exports = {
 
       // enable this if chromedriver hangs to see logs
       // chromeDriverLogPath: '../chromedriverlog.txt',
-      sandbox: false,
     };
     if (process.platform === 'darwin') {
       options.chromeDriverArgs.push('remote-debugging-port=9222');
