@@ -51,12 +51,13 @@ module.exports = {
   getSpectronApp() {
     const options = {
       path: electronBinaryPath,
-      args: [`${path.join(sourceRootDir, 'src')}`, `--data-dir=${userDataDir}`, '--disable-dev-mode', '--disable-dev-shm-usage'],
+      args: [`${path.join(sourceRootDir, 'src')}`, `--data-dir=${userDataDir}`, '--disable-dev-mode'],
       chromeDriverLogPath: '../chromedriverlog.txt',
       sandbox: false,
+      chromeDriverArgs: ['disable-dev-shm-usage', 'no-sandbox'],
     };
     if (process.platform === 'darwin') {
-      options.chromeDriverArgs = ['remote-debugging-port=9222'];
+      options.chromeDriverArgs.push('remote-debugging-port=9222');
     }
     return new Application(options);
   },
