@@ -12,9 +12,15 @@ describe('application', function desc() {
 
   beforeEach(() => {
     env.createTestUserDataDir();
+    console.log("set up test user data dir");
     env.cleanTestConfig();
+    console.log("set up config");
     this.app = env.getSpectronApp();
-    return this.app.start();
+    console.log("got spectron");
+    const result = this.app.start();
+    console.log("started app");
+    console.log("result");
+    return result;
   });
 
   afterEach(async () => {
@@ -23,16 +29,21 @@ describe('application', function desc() {
     }
   });
 
+  console.log("before test")
   it('should show a window', async () => {
+    console.log("staring test for creating window");
     await this.app.client.waitUntilWindowLoaded();
+    console.log("window loaded");
     const count = await this.app.client.getWindowCount();
     count.should.equal(1);
-
+    console.log("1 window");
     const opened = await this.app.browserWindow.isDevToolsOpened();
     opened.should.be.false;
+    console.log("with dev tools");
 
     const visible = await this.app.browserWindow.isVisible();
     visible.should.be.true;
+    console.log("window is visible!");
   });
 
   it.skip('should restore window bounds', async () => {

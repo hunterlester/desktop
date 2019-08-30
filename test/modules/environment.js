@@ -51,7 +51,7 @@ module.exports = {
   getSpectronApp() {
     const options = {
       path: electronBinaryPath,
-      args: [`${path.join(sourceRootDir, 'src')}`, `--data-dir=${userDataDir}`, '--disable-dev-mode'],
+      args: [`${path.join(sourceRootDir, 'src')}`, `--data-dir=${userDataDir}`, '--disable-dev-mode', '--disable-dev-shm-usage'],
       chromeDriverLogPath: '../chromedriverlog.txt',
     };
     if (process.platform === 'darwin') {
