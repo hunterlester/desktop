@@ -89,12 +89,13 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-    - lint
+    # guillermo.vaya: uncomment once test is fully green with no extras
+    # - lint
     - test
-    - build:
-        requires:
-        - lint
-        - test
+    # - build:
+    #     requires:
+    #     - lint
+    #     - test
 
 # Original config.yml file:
 # version: 2.1

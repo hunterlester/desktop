@@ -52,9 +52,10 @@ module.exports = {
     const options = {
       path: electronBinaryPath,
       args: [`${path.join(sourceRootDir, 'src')}`, `--data-dir=${userDataDir}`, '--disable-dev-mode'],
-      chromeDriverLogPath: '../chromedriverlog.txt',
+
+      // enable this if chromedriver hangs to see logs
+      // chromeDriverLogPath: '../chromedriverlog.txt',
       sandbox: false,
-      chromeDriverArgs: ['disable-dev-shm-usage', 'no-sandbox'],
     };
     if (process.platform === 'darwin') {
       options.chromeDriverArgs.push('remote-debugging-port=9222');
