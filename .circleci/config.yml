@@ -30,7 +30,7 @@ jobs:
     - run:
         command: npm install
     - run:
-        command: ELECTRON_DISABLE_SANDBOX=1 xvfb-run --server-args="-screen 0 1920x1080x24" npm run test:app
+        command: ELECTRON_DISABLE_SANDBOX=1 xvfb-run npm run test:app
     - run:
         command: mkdir -p /tmp/test-results
     - run:
