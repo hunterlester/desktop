@@ -49,11 +49,15 @@ module.exports = {
   },
 
   getSpectronApp() {
-    return new Application({
+    const options = {
       path: electronBinaryPath,
       args: [`${path.join(sourceRootDir, 'src')}`, `--data-dir=${userDataDir}`, '--disable-dev-mode'],
-      chromeDriverArgs: ['remote-debugging-port=9222'],
-    });
+      chromeDriverLogPath: '../chromedriverlog.txt',
+    };
+    if (process.platform === 'darwin') {
+      options.chromeDriverArgs = ['remote-debugging-port=9222'];
+    }
+    return new Application(options);
   },
 
   addClientCommands(client) {
