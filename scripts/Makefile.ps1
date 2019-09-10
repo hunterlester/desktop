@@ -363,9 +363,9 @@ function Install-Deps {
                 Print-Info "Installing wixtoolset..."
                 # choco install wixtoolset --yes
                 $WebClient = New-Object System.Net.WebClient
-                $WebClient.DownloadFile("https://github.com/wixtoolset/wix3/releases/download/wix3111rtm/wix311.exe","wix311.exe")
+                $WebClient.DownloadFile("https://github.com/wixtoolset/wix3/releases/download/wix3111rtm/wix311.exe",".\scripts\wix311.exe")
                 # todo: check hash
-                wix311.exe -q
+                .\scripts\wix311.exe -q
                 break;
             }
             "signtool" {
