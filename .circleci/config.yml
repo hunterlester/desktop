@@ -108,12 +108,14 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - check
-      - build:
-          requires:
-            - check
+      # uncomment later
+      # - check
+      # - build:
+      #     requires:
+      #       - check
       # this should be conditional in the future
       # conditions might be either github-tag or branch name
-      - msi_installer:
-          requires:
-            - build
+      - msi_installer
+      #- msi_installer:
+      #    requires:
+      #      - build
