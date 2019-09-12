@@ -96,10 +96,6 @@ jobs:
       - checkout
       - win_make: 
           operation: optimize
-      - run:
-          command: ./scripts/wix.ps1
-          name: Install wix
-          shell: powershell
       - win_make:
           operation: "install-deps"
       - win_make: 
