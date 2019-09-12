@@ -1,5 +1,5 @@
 # import tools
-. .\tools.ps1
+. .\scripts\tools.ps1
 
 # src: https://superuser.com/a/756696/456258
 function Is-Admin {
