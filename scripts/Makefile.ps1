@@ -9,10 +9,10 @@ Param (
 # these should be better with modules, but we would have to install them on circleci servers
 
 # import tools
-. ./tools.ps1
+. .\scripts\tools.ps1
 
 # import dependencies functions
-. ./dependencies.ps1
+. .\scripts\dependencies.ps1
 
 ################################################################################
 # Appveyor related functions
