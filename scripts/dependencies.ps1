@@ -84,7 +84,7 @@ function Install-Wix {
     Print-Info "Installing wixtoolset..."
     # todo: check hash
     .\scripts\wix.exe -q
-    if ($LastExitCode -ne 0) {
+    if ($LastExitCode -ne $null) {
         throw "com.mattermost.makefile.deps.wix"
     }
     Print-Info "wixtoolset installed!"

@@ -443,20 +443,25 @@ function Main {
         }
 
         $env:COM_MATTERMOST_MAKEFILE_EXECUTION_SUCCESS = $true
+        $exitcode = 0
 
     } catch {
         switch ($_.Exception.Message) {
             "com.mattermost.makefile.deps.missing" {
                 Print-Error "The following dependencies are missing: $($missing -Join ', ').`n    Please install dependencies as an administrator:`n    # makefile.ps1 install-deps"
+                $exitcode = -1
             }
             "com.mattermost.makefile.deps.notadmin" {
                 Print-Error "Installing dependencies requires admin privileges. Operation aborted.`n    Please reexecute this makefile as an administrator:`n    # makefile.ps1 install-deps"
+                $exitcode = -2
             }
             "com.mattermost.makefile.deps.wix" {
-                Print-Error "There was nothing wrong with your source code,but we found a problem installing wix toolset: $LastExitCode and couldn't continue. please try re-running the job."
+                Print-Error "There was nothing wrong with your source code,but we found a problem installing wix toolset and couldn't continue. please try re-running the job."
+                $exitcode = -3
             }   
             default {          
                 Print-Error "Another error occurred: $_"
+                $exitcode = -100
             }
         }
     } finally {
@@ -464,6 +469,7 @@ function Main {
             Print-Warning "Makefile interrupted by Ctrl + C or by another interruption handler."
         }
         Restore-ComputerState
+        exit $exitcode
     }
 }
 
