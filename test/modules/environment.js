@@ -66,8 +66,40 @@ module.exports = {
   },
 
   addClientCommands(client) {
-    client.addCommand('loadSettingsPage', function async() {
-      return this.url('file://' + path.join(sourceRootDir, 'src/browser/settings.html')).waitUntilWindowLoaded();
+    client.addCommand('customClick', function async(selector) {
+      let selectorString = selector;
+      let innerTextString = '';
+      const attributeSelectorRegExp = new RegExp(/\[.*=.*\]/);
+      const containsEqualsSignRegExp = new RegExp('=');
+      const isSelectingByAttribute = selector.match(attributeSelectorRegExp);
+      const containsEqualsSign = selector.match(containsEqualsSignRegExp);
+      if (containsEqualsSign && !isSelectingByAttribute) {
+        selectorString = selector.split('=')[0].trim();
+        innerTextString = selector.split('=')[1].trim();
+      }
+      return this.execute((elementSelector, innerTextQuery) => {
+        // TODO: audit for missing edge cases
+        let element;
+        if (elementSelector && !innerTextQuery) {
+          element = document.querySelector(elementSelector);
+        } else if (!elementSelector && innerTextQuery) {
+          const elements = Array.from(document.all);
+          element = elements.find((el) => el.innerText === innerTextQuery);
+        } else if (elementSelector && innerTextQuery) {
+          const elements = Array.from(document.querySelectorAll(elementSelector));
+          element = elements.find((el) => el.innerText === innerTextQuery);
+        } else {
+          throw new Error('Please pass proper selector query.');
+        }
+        if (element) {
+          element.click();
+        } else {
+          throw Error(`${elementSelector} not found.`);
+        }
+      }, selectorString, innerTextString);
+    });
+    client.addCommand('toggleSettingsPage', function async() {
+      return this.browserWindow.send('toggle-settings-page');
     });
     client.addCommand('isNodeEnabled', function async() {
       return this.execute(() => {

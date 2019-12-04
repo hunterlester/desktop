@@ -28,10 +28,6 @@ const teams = config.teams;
 
 remote.getCurrentWindow().removeAllListeners('focus');
 
-if (teams.length === 0) {
-  remote.getCurrentWindow().loadFile('browser/settings.html');
-}
-
 const parsedURL = url.parse(window.location.href, true);
 const initialIndex = parsedURL.query.index ? parseInt(parsedURL.query.index, 10) : 0;
 
@@ -44,10 +40,12 @@ config.on('update', (configData) => {
   teams.splice(0, teams.length, ...configData.teams);
 });
 
+// when the config object changes here in the renderer process, tell the main process to reload its config object to get the changes
 config.on('synchronize', () => {
   ipcRenderer.send('reload-config');
 });
 
+// listen for any config reload requests from the main process to reload configuration changes here in the renderer process
 ipcRenderer.on('reload-config', () => {
   config.reload();
 });
@@ -139,6 +137,7 @@ function handleSelectSpellCheckerLocale(locale) {
 ReactDOM.render(
   <MainPage
     teams={teams}
+    config={config}
     initialIndex={initialIndex}
     onBadgeChange={showBadge}
     onTeamConfigChange={teamConfigChange}

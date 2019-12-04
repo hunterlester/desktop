@@ -39,6 +39,7 @@ export default class TeamList extends React.Component {
       teams[team.index].name = team.name;
       teams[team.index].url = team.url;
     } else {
+      // TODO: update state or create local variable instead of pushing to props
       teams.push(team);
     }
 
@@ -137,7 +138,6 @@ export default class TeamList extends React.Component {
               index: false,
             },
           });
-          this.render();
           this.props.setAddTeamFormVisibility(false);
         }}
         team={this.state.team}

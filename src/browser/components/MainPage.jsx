@@ -20,8 +20,9 @@ import TabBar from './TabBar.jsx';
 import HoveringURL from './HoveringURL.jsx';
 import Finder from './Finder.jsx';
 import NewTeamModal from './NewTeamModal.jsx';
+import SettingsModal from './SettingsPage.jsx';
 
-export default class MainPage extends React.Component {
+export default class MainPage extends React.PureComponent {
   constructor(props) {
     super(props);
 
@@ -42,10 +43,12 @@ export default class MainPage extends React.Component {
       mentionAtActiveCounts: new Array(this.props.teams.length),
       loginQueue: [],
       targetURL: '',
+      showSettingsModal: this.props.teams.length === 0,
+      teams: this.props.teams,
     };
   }
 
-  parseDeeplinkURL(deeplink, teams = this.props.teams) {
+  parseDeeplinkURL(deeplink, teams = this.state.teams) {
     if (deeplink && Array.isArray(teams) && teams.length) {
       const deeplinkURL = url.parse(deeplink);
       let parsedDeeplink = null;
@@ -77,20 +80,40 @@ export default class MainPage extends React.Component {
     return remote.webContents.getAllWebContents().find((webContents) => webContents.getURL().includes(tabURL));
   }
 
+  focusListener = () => {
+    this.handleOnTeamFocused(this.state.key);
+    if (this.refs[`mattermostView${this.state.key}`]) {
+      this.refs[`mattermostView${this.state.key}`].focusOnWebView();
+    }
+  }
+
   componentDidMount() {
-    const self = this;
+    const {config} = this.props;
+
+    config.on('update', (data) => {
+      this.setState({teams: data.teams, key: data.teams.length - 1});
+    });
+
     ipcRenderer.on('login-request', (event, request, authInfo) => {
-      self.setState({
+      this.setState({
         loginRequired: true,
       });
-      const loginQueue = self.state.loginQueue;
+      const loginQueue = this.state.loginQueue;
       loginQueue.push({
         request,
         authInfo,
       });
-      self.setState({
+      this.setState({
         loginQueue,
       });
+    });
+
+    ipcRenderer.on('toggle-settings-page', (_e, tabIndex) => {
+      const {showSettingsModal, teams} = this.state;
+      if (teams.length === 0) {
+        return;
+      }
+      this.setState({showSettingsModal: !showSettingsModal, key: Number.isInteger(tabIndex) ? tabIndex : this.state.key});
     });
 
     // can't switch tabs sequentially for some reason...
@@ -112,24 +135,17 @@ export default class MainPage extends React.Component {
       this.refs[`mattermostView${this.state.key}`].clearCacheAndReload();
     });
 
-    function focusListener() {
-      self.handleOnTeamFocused(self.state.key);
-      self.refs[`mattermostView${self.state.key}`].focusOnWebView();
-    }
-
     const currentWindow = remote.getCurrentWindow();
-    currentWindow.on('focus', focusListener);
+    currentWindow.on('focus', this.focusListener);
     window.addEventListener('beforeunload', () => {
-      currentWindow.removeListener('focus', focusListener);
+      currentWindow.removeListener('focus', this.focusListener);
     });
 
     // https://github.com/mattermost/desktop/pull/371#issuecomment-263072803
-    currentWindow.webContents.on('devtools-closed', () => {
-      focusListener();
-    });
+    currentWindow.webContents.on('devtools-closed', this.focusListener);
 
     ipcRenderer.on('open-devtool', () => {
-      document.getElementById(`mattermostView${self.state.key}`).openDevTools();
+      document.getElementById(`mattermostView${this.state.key}`).openDevTools();
     });
 
     ipcRenderer.on('zoom-in', () => {
@@ -212,26 +228,22 @@ export default class MainPage extends React.Component {
 
     //goBack and goForward
     ipcRenderer.on('go-back', () => {
-      const mattermost = self.refs[`mattermostView${self.state.key}`];
+      const mattermost = this.refs[`mattermostView${this.state.key}`];
       if (mattermost.canGoBack()) {
         mattermost.goBack();
       }
     });
 
     ipcRenderer.on('go-forward', () => {
-      const mattermost = self.refs[`mattermostView${self.state.key}`];
+      const mattermost = this.refs[`mattermostView${this.state.key}`];
       if (mattermost.canGoForward()) {
         mattermost.goForward();
       }
     });
 
-    ipcRenderer.on('add-server', () => {
-      this.addServer();
-    });
+    ipcRenderer.on('add-server', this.addServer);
 
-    ipcRenderer.on('focus-on-webview', () => {
-      this.focusOnWebView();
-    });
+    ipcRenderer.on('focus-on-webview', this.focusOnWebView);
 
     ipcRenderer.on('protocol-deeplink', (event, deepLinkUrl) => {
       const parsedDeeplink = this.parseDeeplinkURL(deepLinkUrl);
@@ -239,7 +251,7 @@ export default class MainPage extends React.Component {
         if (this.state.key !== parsedDeeplink.teamIndex) {
           this.handleSelect(parsedDeeplink.teamIndex);
         }
-        self.refs[`mattermostView${parsedDeeplink.teamIndex}`].handleDeepLink(parsedDeeplink.path);
+        this.refs[`mattermostView${parsedDeeplink.teamIndex}`].handleDeepLink(parsedDeeplink.path);
       }
     });
 
@@ -249,7 +261,7 @@ export default class MainPage extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.key !== this.state.key) { // i.e. When tab has been changed
+    if (prevState.key !== this.state.key && this.refs[`mattermostView${this.state.key}`]) { // i.e. When tab has been changed
       this.refs[`mattermostView${this.state.key}`].focusOnWebView();
     }
   }
@@ -270,6 +282,7 @@ export default class MainPage extends React.Component {
   }
 
   handleBadgeChange = (index, sessionExpired, unreadCount, mentionCount, isUnread, isMentioned) => {
+    // NOTE: this method is called in an interval and causes rerender without PureComponent
     const sessionsExpired = this.state.sessionsExpired;
     const unreadCounts = this.state.unreadCounts;
     const mentionCounts = this.state.mentionCounts;
@@ -369,7 +382,7 @@ export default class MainPage extends React.Component {
   }
 
   focusOnWebView = (e) => {
-    if (e.target.className !== 'finder-input') {
+    if (e.target.className !== 'finder-input' && this.refs[`mattermostView${this.state.key}`]) {
       this.refs[`mattermostView${this.state.key}`].focusOnWebView();
     }
   }
@@ -394,14 +407,13 @@ export default class MainPage extends React.Component {
   }
 
   render() {
-    const self = this;
     let tabsRow;
-    if (this.props.teams.length > 1) {
+    if (this.state.teams.length > 1) {
       tabsRow = (
         <Row>
           <TabBar
             id='tabBar'
-            teams={this.props.teams}
+            teams={this.state.teams}
             sessionsExpired={this.state.sessionsExpired}
             unreadCounts={this.state.unreadCounts}
             mentionCounts={this.state.mentionCounts}
@@ -416,15 +428,9 @@ export default class MainPage extends React.Component {
       );
     }
 
-    const views = this.props.teams.map((team, index) => {
-      function handleBadgeChange(sessionExpired, unreadCount, mentionCount, isUnread, isMentioned) {
-        self.handleBadgeChange(index, sessionExpired, unreadCount, mentionCount, isUnread, isMentioned);
-      }
-      function handleNotificationClick() {
-        self.handleSelect(index);
-      }
+    const views = this.state.teams.map((team, index) => {
       const id = 'mattermostView' + index;
-      const isActive = self.state.key === index;
+      const isActive = this.state.key === index;
 
       let teamUrl = team.url;
 
@@ -439,14 +445,16 @@ export default class MainPage extends React.Component {
         <MattermostView
           key={id}
           id={id}
-          withTab={this.props.teams.length > 1}
+          withTab={this.state.teams.length > 1}
           useSpellChecker={this.props.useSpellChecker}
           onSelectSpellCheckerLocale={this.props.onSelectSpellCheckerLocale}
           src={teamUrl}
           name={team.name}
-          onTargetURLChange={self.handleTargetURLChange}
-          onBadgeChange={handleBadgeChange}
-          onNotificationClick={handleNotificationClick}
+          onTargetURLChange={this.handleTargetURLChange}
+          onBadgeChange={(sessionExpired, unreadCount, mentionCount, isUnread, isMentioned) =>
+            this.handleBadgeChange(index, sessionExpired, unreadCount, mentionCount, isUnread, isMentioned)
+          }
+          onNotificationClick={() => this.handleSelect(index)}
           ref={id}
           active={isActive}
         />);
@@ -474,13 +482,10 @@ export default class MainPage extends React.Component {
           });
         }}
         onSave={(newTeam) => {
-          this.props.teams.push(newTeam);
           this.setState({
             showNewTeamModal: false,
-            key: this.props.teams.length - 1,
           });
-          this.render();
-          this.props.onTeamConfigChange(this.props.teams);
+          this.props.onTeamConfigChange(this.state.teams.concat(newTeam));
         }}
       />
     );
@@ -489,6 +494,10 @@ export default class MainPage extends React.Component {
         className='MainPage'
         onClick={this.focusOnWebView}
       >
+        <SettingsModal
+          show={this.state.showSettingsModal}
+          config={this.props.config}
+        />
         <LoginModal
           show={this.state.loginQueue.length !== 0}
           request={request}
@@ -540,6 +549,7 @@ MainPage.propTypes = {
   onSelectSpellCheckerLocale: PropTypes.func.isRequired,
   deeplinkingUrl: PropTypes.string,
   showAddServerButton: PropTypes.bool.isRequired,
+  config: PropTypes.object.isRequired,
 };
 
 /* eslint-enable react/no-set-state */

@@ -6,12 +6,11 @@
 /* eslint-disable react/no-set-state */
 
 import React from 'react';
-import {Button, Checkbox, Col, FormGroup, Grid, HelpBlock, Navbar, Radio, Row} from 'react-bootstrap';
+import PropTypes from 'prop-types';
+import {Button, Checkbox, Col, FormGroup, Grid, HelpBlock, Navbar, Radio, Row, Modal} from 'react-bootstrap';
 
-import {ipcRenderer, remote} from 'electron';
+import {remote} from 'electron';
 import {debounce} from 'underscore';
-
-import Config from '../../common/config';
 
 import TeamList from './TeamList.jsx';
 import AutoSaveIndicator from './AutoSaveIndicator.jsx';
@@ -19,19 +18,11 @@ import AutoSaveIndicator from './AutoSaveIndicator.jsx';
 const CONFIG_TYPE_SERVERS = 'servers';
 const CONFIG_TYPE_APP_OPTIONS = 'appOptions';
 
-const config = new Config(remote.app.getPath('userData') + '/config.json', remote.getCurrentWindow().registryConfigData);
-
-function backToIndex(index) {
-  const target = typeof index === 'undefined' ? 0 : index;
-  const indexURL = remote.getGlobal('isDev') ? 'http://localhost:8080/browser/index.html' : `file://${remote.app.getAppPath()}/browser/index.html`;
-  remote.getCurrentWindow().loadURL(`${indexURL}?index=${target}`);
-}
-
-export default class SettingsPage extends React.Component {
+export default class SettingsModal extends React.PureComponent {
   constructor(props) {
     super(props);
 
-    this.state = this.convertConfigDataToState(config.data);
+    this.state = this.convertConfigDataToState(this.props.config.data);
 
     this.trayIconThemeRef = React.createRef();
 
@@ -39,6 +30,7 @@ export default class SettingsPage extends React.Component {
   }
 
   componentDidMount() {
+    const {config} = this.props;
     config.on('update', (configData) => {
       this.updateSaveState();
       this.setState(this.convertConfigDataToState(configData, this.state));
@@ -54,26 +46,6 @@ export default class SettingsPage extends React.Component {
           this.setState({savingState});
         }
       });
-    });
-
-    // when the config object changes here in the renderer process, tell the main process to reload its config object to get the changes
-    config.on('synchronize', () => {
-      ipcRenderer.send('reload-config');
-    });
-
-    // listen for any config reload requests from the main process to reload configuration changes here in the renderer process
-    ipcRenderer.on('reload-config', () => {
-      config.reload();
-    });
-
-    ipcRenderer.on('add-server', () => {
-      this.setState({
-        showAddTeamForm: true,
-      });
-    });
-
-    ipcRenderer.on('switch-tab', (event, key) => {
-      backToIndex(key);
     });
   }
 
@@ -103,7 +75,7 @@ export default class SettingsPage extends React.Component {
   }
 
   processSaveQueue = debounce(() => {
-    config.setMultiple(this.saveQueue.splice(0, this.saveQueue.length));
+    this.props.config.setMultiple(this.saveQueue.splice(0, this.saveQueue.length));
   }, 500);
 
   updateSaveState = () => {
@@ -151,7 +123,7 @@ export default class SettingsPage extends React.Component {
   }
 
   handleCancel = () => {
-    backToIndex();
+    remote.getCurrentWindow().send('toggle-settings-page');
   }
 
   handleChangeShowTrayIcon = () => {
@@ -291,6 +263,10 @@ export default class SettingsPage extends React.Component {
     });
   }
 
+  backToIndex = (index) => {
+    remote.getCurrentWindow().send('toggle-settings-page', index);
+  }
+
   render() {
     const settingsPage = {
       navbar: {
@@ -340,7 +316,7 @@ export default class SettingsPage extends React.Component {
             addServer={this.addServer}
             allowTeamEdit={this.state.enableTeamModification}
             onTeamClick={(index) => {
-              backToIndex(index + this.state.buildTeams.length + this.state.registryTeams.length);
+              this.backToIndex(index + this.state.buildTeams.length + this.state.registryTeams.length);
             }}
           />
         </Col>
@@ -605,35 +581,47 @@ export default class SettingsPage extends React.Component {
     ) : null;
 
     return (
-      <div>
-        <Navbar
-          className='navbar-fixed-top'
-          style={settingsPage.navbar}
-        >
-          <div style={{position: 'relative'}}>
-            <h1 style={settingsPage.heading}>{'Settings'}</h1>
-            <Button
-              id='btnClose'
-              className='CloseButton'
-              bsStyle='link'
-              style={settingsPage.close}
-              onClick={this.handleCancel}
-              disabled={this.state.teams.length === 0}
-            >
-              <span>{'×'}</span>
-            </Button>
-          </div>
-        </Navbar>
-        <Grid
-          className='settingsPage'
-          style={{paddingTop: '100px'}}
-        >
-          { srvMgmt }
-          { optionsRow }
-        </Grid>
-      </div>
+      <Modal
+        show={this.props.show}
+        dialogClassName='settings-modal-dialog'
+        autoFocus={false}
+        restoreFocus={false}
+      >
+        <Modal.Body>
+          <Navbar
+            className='navbar-fixed-top'
+            style={settingsPage.navbar}
+          >
+            <div style={{position: 'relative'}}>
+              <h1 style={settingsPage.heading}>{'Settings'}</h1>
+              <Button
+                id='btnClose'
+                className='CloseButton'
+                bsStyle='link'
+                style={settingsPage.close}
+                onClick={this.handleCancel}
+                disabled={this.state.teams.length === 0}
+              >
+                <span>{'×'}</span>
+              </Button>
+            </div>
+          </Navbar>
+          <Grid
+            className='settingsPage'
+            style={{paddingTop: '100px'}}
+          >
+            { srvMgmt }
+            { optionsRow }
+          </Grid>
+        </Modal.Body>
+      </Modal>
     );
   }
 }
+
+SettingsModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  config: PropTypes.object.isRequired,
+};
 
 /* eslint-enable react/no-set-state */
