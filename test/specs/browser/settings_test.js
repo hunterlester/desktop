@@ -110,15 +110,11 @@ describe('settings modal', function desc() {
   });
 
   describe('Server list', () => {
-    it.skip('should open the corresponding tab when a server list item is clicked', async () => {
+    it('should open the corresponding tab when a server list item is clicked', async () => {
       env.addClientCommands(this.app.client);
       await this.app.client.
         toggleSettingsPage().
-        customClick('h4=example').
-        pause(1000).
-        waitUntilWindowLoaded();
-      let indexURL = await this.app.client.getUrl();
-      indexURL.should.match(/\/index.html(\?.+)?$/);
+        customClick('h4=example');
 
       let isView0Visible = await this.app.client.isVisible('#mattermostView0');
       isView0Visible.should.be.true;
@@ -128,11 +124,7 @@ describe('settings modal', function desc() {
 
       await this.app.client.
         toggleSettingsPage().
-        customClick('h4=github').
-        pause(1000).
-        waitUntilWindowLoaded();
-      indexURL = await this.app.client.getUrl();
-      indexURL.should.match(/\/index.html(\?.+)?$/);
+        customClick('h4=github');
 
       isView0Visible = await this.app.client.isVisible('#mattermostView0');
       isView0Visible.should.be.false;
@@ -382,7 +374,7 @@ describe('settings modal', function desc() {
     it('should disappear on click Close', async () => {
       await this.app.client.
         customClick('.modal-dialog button.close').
-        waitForVisible(modalTitleSelector, 10000, true);
+        pause(500);
       const existing = await this.app.client.isExisting(modalTitleSelector);
       existing.should.be.false;
     });
