@@ -285,6 +285,7 @@ export default class MainPage extends React.Component {
 
     ipcRenderer.on('protocol-deeplink', (event, deepLinkUrl) => {
       const parsedDeeplink = this.parseDeeplinkURL(deepLinkUrl);
+      console.log('parsedDeeplink: ', parsedDeeplink);
       if (parsedDeeplink) {
         if (this.state.key !== parsedDeeplink.teamIndex) {
           this.handleSelect(parsedDeeplink.teamIndex);
