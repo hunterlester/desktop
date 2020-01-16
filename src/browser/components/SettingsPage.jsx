@@ -246,6 +246,7 @@ export default class SettingsModal extends React.PureComponent {
   }
 
   updateTeam = (index, newData) => {
+    console.log('update team called in settings page');
     const teams = this.state.localTeams;
     teams[index] = newData;
     setImmediate(this.saveSetting, CONFIG_TYPE_SERVERS, {key: 'teams', data: teams});
@@ -257,6 +258,7 @@ export default class SettingsModal extends React.PureComponent {
   addServer = (team) => {
     const teams = this.state.localTeams;
     teams.push(team);
+    console.log('addServer Teams: ', teams);
     setImmediate(this.saveSetting, CONFIG_TYPE_SERVERS, {key: 'teams', data: teams});
     this.setState({
       teams,
@@ -585,7 +587,6 @@ export default class SettingsModal extends React.PureComponent {
       <Modal
         show={this.props.show}
         dialogClassName='settings-modal-dialog'
-        onExited={this.props.onExit}
         restoreFocus={false}
       >
         <Modal.Body>
@@ -623,7 +624,6 @@ export default class SettingsModal extends React.PureComponent {
 SettingsModal.propTypes = {
   show: PropTypes.bool.isRequired,
   config: PropTypes.object.isRequired,
-  onExit: PropTypes.func.isRequired,
 };
 
 /* eslint-enable react/no-set-state */

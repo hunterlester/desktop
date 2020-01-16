@@ -21,7 +21,6 @@ import minimizeButton from '../../assets/titlebar/chrome-minimize.svg';
 import closeButton from '../../assets/titlebar/chrome-close.svg';
 
 import LoginModal from './LoginModal.jsx';
-import MattermostView from './MattermostView.jsx';
 import TabBar from './TabBar.jsx';
 import HoveringURL from './HoveringURL.jsx';
 import Finder from './Finder.jsx';
@@ -84,6 +83,8 @@ export default class MainPage extends React.PureComponent {
 
   getTabWebContents(index = this.state.key || 0, teams = this.state.teams) {
     const allWebContents = remote.webContents.getAllWebContents();
+
+    // log all web contents
     const openDevTools = allWebContents.find((webContents) => webContents.getURL().includes('chrome-devtools') && webContents.isFocused());
     if (openDevTools) {
       return openDevTools;
@@ -110,9 +111,9 @@ export default class MainPage extends React.PureComponent {
   focusListener = () => {
     if (!this.state.showSettingsModal && !this.state.showNewTeamModal) {
       this.handleOnTeamFocused(this.state.key);
-      if (this.refs[`mattermostView${this.state.key}`]) {
-        this.refs[`mattermostView${this.state.key}`].focusOnWebView();
-      }
+
+      // focus browserview
+
       this.setState({unfocused: false});
     }
   }
@@ -147,7 +148,14 @@ export default class MainPage extends React.PureComponent {
     }
 
     config.on('update', (data) => {
-      this.setState({teams: data.teams, key: data.teams.length - 1});
+      console.log('config update:', data.teams);
+      const newState = {teams: data.teams, key: data.teams.length - 1};
+      if (data.teams.length === 0) {
+        newState.showSettingsModal = true;
+      } else {
+        newState.showSettingsModal = false;
+      }
+      this.setState(newState);
     });
 
     // when the config object changes here in the renderer process, tell the main process to reload its config object to get the changes
@@ -195,10 +203,10 @@ export default class MainPage extends React.PureComponent {
 
     // reload the activated tab
     ipcRenderer.on('reload-tab', () => {
-      this.refs[`mattermostView${this.state.key}`].reload();
+      // reload browser view
     });
     ipcRenderer.on('clear-cache-and-reload-tab', () => {
-      this.refs[`mattermostView${this.state.key}`].clearCacheAndReload();
+      // clear-cache-and-reload-tab browserview
     });
 
     const currentWindow = remote.getCurrentWindow();
@@ -216,10 +224,6 @@ export default class MainPage extends React.PureComponent {
 
     // https://github.com/mattermost/desktop/pull/371#issuecomment-263072803
     currentWindow.webContents.on('devtools-closed', this.focusListener);
-
-    ipcRenderer.on('open-devtool', () => {
-      document.getElementById(`mattermostView${this.state.key}`).openDevTools();
-    });
 
     ipcRenderer.on('zoom-in', () => {
       const activeTabWebContents = this.getTabWebContents(this.state.key);
@@ -306,17 +310,11 @@ export default class MainPage extends React.PureComponent {
 
     //goBack and goForward
     ipcRenderer.on('go-back', () => {
-      const mattermost = this.refs[`mattermostView${this.state.key}`];
-      if (mattermost.canGoBack()) {
-        mattermost.goBack();
-      }
+      // browser vbiew go back
     });
 
     ipcRenderer.on('go-forward', () => {
-      const mattermost = this.refs[`mattermostView${this.state.key}`];
-      if (mattermost.canGoForward()) {
-        mattermost.goForward();
-      }
+      // browser view go forward
     });
 
     ipcRenderer.on('add-server', this.addServer);
@@ -329,7 +327,8 @@ export default class MainPage extends React.PureComponent {
         if (this.state.key !== parsedDeeplink.teamIndex) {
           this.handleSelect(parsedDeeplink.teamIndex);
         }
-        this.refs[`mattermostView${parsedDeeplink.teamIndex}`].handleDeepLink(parsedDeeplink.path);
+
+        // browser view handle deep link
       }
     });
 
@@ -358,9 +357,15 @@ export default class MainPage extends React.PureComponent {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.key !== this.state.key && this.refs[`mattermostView${this.state.key}`]) { // i.e. When tab has been changed
-      this.refs[`mattermostView${this.state.key}`].focusOnWebView();
+    if (
+      ((this.state.showNewTeamModal !== prevState.showNewTeamModal) && this.state.showNewTeamModal) ||
+      ((this.state.showSettingsModal !== prevState.showSettingsModal) && this.state.showSettingsModal)) {
+      ipcRenderer.send('browserview-clear');
+    } else {
+      ipcRenderer.send('view-select');
     }
+
+    // focus browser view
   }
 
   handleMaximizeState = () => {
@@ -379,12 +384,13 @@ export default class MainPage extends React.PureComponent {
       key: newKey,
       finderVisible: false,
     });
-    const webview = document.getElementById('mattermostView' + newKey);
-    ipcRenderer.send('update-title', {
-      title: webview.getTitle(),
-    });
-    window.focus();
-    webview.focus();
+    ipcRenderer.send('view-select', this.state.teams[newKey].webContentsId);
+
+    // ipcRenderer.send('update-title', {
+    //   title: browserView.getTitle(),
+    // });
+
+    // focus browser view
     this.handleOnTeamFocused(newKey);
   }
 
@@ -537,9 +543,7 @@ export default class MainPage extends React.PureComponent {
   }
 
   focusOnWebView = () => {
-    if (this.refs[`mattermostView${this.state.key}`]) {
-      this.refs[`mattermostView${this.state.key}`].focusOnWebView();
-    }
+    // TODO: focus on BrowserView
   }
 
   activateFinder = () => {
@@ -670,40 +674,19 @@ export default class MainPage extends React.PureComponent {
       </Row>
     );
 
-    const views = this.state.teams.map((team, index) => {
-      const id = 'mattermostView' + index;
-      const isActive = this.state.key === index;
+    // this.state.teams.forEach((team, index) => {
+    //   const id = 'mattermostView' + index;
+    //   const isActive = this.state.key === index;
 
-      let teamUrl = team.url;
+    //   let teamUrl = team.url;
 
-      if (this.props.deeplinkingUrl) {
-        const parsedDeeplink = this.parseDeeplinkURL(this.props.deeplinkingUrl, [team]);
-        if (parsedDeeplink) {
-          teamUrl = parsedDeeplink.url;
-        }
-      }
-
-      return (
-        <MattermostView
-          key={id}
-          id={id}
-          useSpellChecker={this.props.useSpellChecker}
-          onSelectSpellCheckerLocale={this.props.onSelectSpellCheckerLocale}
-          src={teamUrl}
-          name={team.name}
-          onTargetURLChange={this.handleTargetURLChange}
-          onBadgeChange={(sessionExpired, unreadCount, mentionCount, isUnread, isMentioned) =>
-            this.handleBadgeChange(index, sessionExpired, unreadCount, mentionCount, isUnread, isMentioned)
-          }
-          onNotificationClick={() => this.handleSelect(index)}
-          ref={id}
-          active={isActive}
-        />);
-    });
-    const viewsRow = (
-      <Row>
-        {views}
-      </Row>);
+    //   if (this.props.deeplinkingUrl) {
+    //     const parsedDeeplink = this.parseDeeplinkURL(this.props.deeplinkingUrl, [team]);
+    //     if (parsedDeeplink) {
+    //       teamUrl = parsedDeeplink.url;
+    //     }
+    //   }
+    // });
 
     let request = null;
     let authServerURL = null;
@@ -725,6 +708,8 @@ export default class MainPage extends React.PureComponent {
           });
         }}
         onSave={(newTeam) => {
+          const isActive = true;
+          ipcRenderer.send('add-tab', newTeam, isActive);
           this.setState({
             showNewTeamModal: false,
           });
@@ -740,13 +725,6 @@ export default class MainPage extends React.PureComponent {
         <SettingsModal
           show={this.state.showSettingsModal}
           config={this.props.config}
-          onExit={() => {
-            document.activeElement.blur();
-            const webview = document.activeElement.querySelector(`#mattermostView${this.state.key}`);
-            if (webview) {
-              webview.focus();
-            }
-          }}
         />
         <LoginModal
           show={this.state.loginQueue.length !== 0}
@@ -758,7 +736,6 @@ export default class MainPage extends React.PureComponent {
         />
         <Grid fluid={true}>
           { topRow }
-          { viewsRow }
           { this.state.finderVisible ? (
             <Finder
               webviewKey={this.state.key}

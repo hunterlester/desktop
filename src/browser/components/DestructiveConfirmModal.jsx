@@ -3,6 +3,7 @@
 // See LICENSE.txt for license information.
 import React from 'react';
 import PropTypes from 'prop-types';
+import {remote} from 'electron';
 import {Button, Modal} from 'react-bootstrap';
 
 export default function DestructiveConfirmationModal(props) {
@@ -17,6 +18,9 @@ export default function DestructiveConfirmationModal(props) {
     ...rest} = props;
   return (
     <Modal
+      onExited={() => {
+        remote.getCurrentWindow().send('toggle-settings-page');
+      }}
       container={modalContainer}
       restoreFocus={false}
       {...rest}
